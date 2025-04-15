@@ -2,6 +2,7 @@ package edu.tcu.cs.frogcrewproject.Controller;
 
 import edu.tcu.cs.frogcrewproject.dto.CrewMemberDto;
 import edu.tcu.cs.frogcrewproject.service.CrewMemberService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +19,7 @@ public class CrewMemberController {
     }
 
     @PostMapping
-    public ResponseEntity<CrewMemberDto> create(@RequestBody CrewMemberDto dto) {
+    public ResponseEntity<CrewMemberDto> create(@Valid @RequestBody CrewMemberDto dto) {
         return ResponseEntity.ok(service.create(dto));
     }
 
