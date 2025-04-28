@@ -17,8 +17,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -67,11 +65,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
-    }
-
-    @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
@@ -107,15 +100,19 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers.frameOptions().disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/artifacts/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/users/**").hasAuthority("ROLE_admin")
-                        .requestMatchers(HttpMethod.POST, "/users").hasAuthority("ROLE_admin")
-                        .requestMatchers(HttpMethod.PUT, "/users/**").hasAuthority("ROLE_admin")
-                        .requestMatchers(HttpMethod.DELETE, "/users/**").hasAuthority("ROLE_admin")
+                        .requestMatchers(HttpMethod.GET, "/api/games/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/crew-members/**").hasAuthority("ROLE_admin")
+                        .requestMatchers(HttpMethod.POST, "/api/crew-members").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/crew-members/**").hasAuthority("ROLE_admin")
+                        .requestMatchers(HttpMethod.DELETE, "/api/crew-members/**").hasAuthority("ROLE_admin")
+                        .requestMatchers("/api/availability/**").hasAuthority("ROLE_USER")
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .anyRequest().authenticated())
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

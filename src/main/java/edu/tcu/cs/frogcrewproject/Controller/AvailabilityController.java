@@ -5,6 +5,8 @@ import edu.tcu.cs.frogcrewproject.service.AvailabilityService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/availability")
 public class AvailabilityController {
@@ -21,5 +23,10 @@ public class AvailabilityController {
         availabilityService.submitAvailability(dto);
         return ResponseEntity.ok("Availability submitted successfully.");
     }
-}
 
+    // Get all availability records
+    @GetMapping
+    public ResponseEntity<List<AvailabilityDto>> getAllAvailability() {
+        return ResponseEntity.ok(availabilityService.getAllAvailability());
+    }
+}
