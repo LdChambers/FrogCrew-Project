@@ -3,14 +3,22 @@ package edu.tcu.cs.frogcrewproject;
 import edu.tcu.cs.frogcrewproject.dto.CrewMemberDto;
 import edu.tcu.cs.frogcrewproject.entity.CrewMember;
 import edu.tcu.cs.frogcrewproject.repository.CrewMemberRepository;
+import edu.tcu.cs.frogcrewproject.security.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,9 +33,40 @@ public class CrewMemberIntegrationTest {
     @Autowired
     private CrewMemberRepository crewMemberRepository;
 
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    private String jwtToken;
+
     @BeforeEach
     void setup() {
         crewMemberRepository.deleteAll();
+
+        // Create a UserDetails object with both USER and ADMIN roles
+        UserDetails userDetails = new User(
+                "testuser",
+                "password",
+                Arrays.asList(
+                        new SimpleGrantedAuthority("ROLE_USER"),
+                        new SimpleGrantedAuthority("ROLE_ADMIN")));
+
+        // Create authentication object
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities());
+
+        // Generate JWT token
+        jwtToken = jwtTokenProvider.createToken(authentication);
+    }
+
+    private HttpHeaders getAuthHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(jwtToken);
+        return headers;
     }
 
     @Test
@@ -41,30 +80,29 @@ public class CrewMemberIntegrationTest {
         dto.setQualifiedPosition("Camera");
         dto.setInvited(false);
 
-        // Log the DTO before sending
-        System.out.println("Sending DTO: " + dto);
-
-        ResponseEntity<CrewMemberDto> postResponse = restTemplate.postForEntity("/api/crew-members", dto,
+        HttpEntity<CrewMemberDto> request = new HttpEntity<>(dto, getAuthHeaders());
+        ResponseEntity<CrewMemberDto> postResponse = restTemplate.exchange(
+                "/api/crew-members",
+                HttpMethod.POST,
+                request,
                 CrewMemberDto.class);
+
         assertEquals(HttpStatus.OK, postResponse.getStatusCode(), "POST request should succeed");
         assertNotNull(postResponse.getBody(), "Response body should not be null");
-
-        // Log the response
-        System.out.println("POST Response: " + postResponse.getBody());
-
         assertNotNull(postResponse.getBody().getId(), "ID should not be null");
         assertEquals("John", postResponse.getBody().getFirstName(), "First name should be 'John' after creation");
         assertEquals("Smith", postResponse.getBody().getLastName(), "Last name should be 'Smith' after creation");
 
         Long id = postResponse.getBody().getId();
-        ResponseEntity<CrewMemberDto> getResponse = restTemplate.getForEntity("/api/crew-members/" + id,
+        HttpEntity<Void> getRequest = new HttpEntity<>(getAuthHeaders());
+        ResponseEntity<CrewMemberDto> getResponse = restTemplate.exchange(
+                "/api/crew-members/" + id,
+                HttpMethod.GET,
+                getRequest,
                 CrewMemberDto.class);
+
         assertEquals(HttpStatus.OK, getResponse.getStatusCode(), "GET request should succeed");
         assertNotNull(getResponse.getBody(), "Response body should not be null");
-
-        // Log the response
-        System.out.println("GET Response: " + getResponse.getBody());
-
         assertNotNull(getResponse.getBody().getFirstName(), "First name should not be null");
         assertEquals("John", getResponse.getBody().getFirstName(), "First name should be 'John' after retrieval");
     }
@@ -93,8 +131,13 @@ public class CrewMemberIntegrationTest {
         assertNotNull(savedMembers);
         assertEquals(2, savedMembers.size());
 
-        ResponseEntity<CrewMemberDto[]> response = restTemplate.getForEntity("/api/crew-members",
+        HttpEntity<Void> request = new HttpEntity<>(getAuthHeaders());
+        ResponseEntity<CrewMemberDto[]> response = restTemplate.exchange(
+                "/api/crew-members",
+                HttpMethod.GET,
+                request,
                 CrewMemberDto[].class);
+
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(2, response.getBody().length);
     }
@@ -114,7 +157,13 @@ public class CrewMemberIntegrationTest {
         assertNotNull(saved);
         assertNotNull(saved.getId());
 
-        restTemplate.delete("/api/crew-members/" + saved.getId());
+        HttpEntity<Void> request = new HttpEntity<>(getAuthHeaders());
+        restTemplate.exchange(
+                "/api/crew-members/" + saved.getId(),
+                HttpMethod.DELETE,
+                request,
+                Void.class);
+
         assertFalse(crewMemberRepository.findById(saved.getId()).isPresent());
     }
 }
