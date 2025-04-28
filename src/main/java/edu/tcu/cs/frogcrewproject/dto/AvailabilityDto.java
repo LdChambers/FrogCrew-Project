@@ -1,7 +1,11 @@
 package edu.tcu.cs.frogcrewproject.dto;
 
+import lombok.Data;
+
+@Data
 public class AvailabilityDto {
 
+    private Long id;
     private Long crewMemberId;
     private Long gameId;
     private boolean available;

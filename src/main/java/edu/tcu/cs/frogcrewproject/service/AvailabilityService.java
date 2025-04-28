@@ -10,6 +10,9 @@ import edu.tcu.cs.frogcrewproject.repository.GameRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class AvailabilityService {
 
@@ -40,5 +43,21 @@ public class AvailabilityService {
         availability.setComment(dto.getComment());
 
         availabilityRepository.save(availability);
+    }
+
+    public List<AvailabilityDto> getAllAvailability() {
+        return availabilityRepository.findAll().stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    private AvailabilityDto convertToDto(Availability availability) {
+        AvailabilityDto dto = new AvailabilityDto();
+        dto.setId(availability.getId());
+        dto.setCrewMemberId(availability.getCrewMember().getId());
+        dto.setGameId(availability.getGame().getId());
+        dto.setAvailable(availability.isAvailable());
+        dto.setComment(availability.getComment());
+        return dto;
     }
 }
