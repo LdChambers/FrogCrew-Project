@@ -37,4 +37,5 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          package: ./target/*.jar
+          package: ./target/FrogCrew-Project-0.0.1-SNAPSHOT.jar
+
