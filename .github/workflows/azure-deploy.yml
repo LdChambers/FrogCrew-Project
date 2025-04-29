@@ -26,7 +26,11 @@ jobs:
     - name: Build with Maven
       run: mvn clean package -DskipTests
 
-    - name: 'Azure Login'
+    - name: List target folder contents (for debugging)
+      run: ls -R ./target
+        
+        
+        - name: 'Azure Login'
       uses: azure/login@v2
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
